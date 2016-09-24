@@ -1,7 +1,16 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+# Minimal vagrant version required by vagrant-hostmanager plugin
 Vagrant.require_version('>= 1.8.1')
+
+# Check required plugins
+REQUIRED_PLUGINS = %w(vagrant-hostmanager)
+
+REQUIRED_PLUGINS.each do |plugin|
+  raise "Missing required plugin. Install the latest plugin version with\n\nvagrant plugin install #{plugin}" unless Vagrant.has_plugin?(plugin)
+end
+
 
 ##
 # This will provision a couple of machines for a test cluster.
@@ -16,11 +25,37 @@ NETMASK = '255.255.255.0'.freeze
 # centos7 with virtualbox guest additions
 VM_BOX = 'bings/centos-7-btrfs'.freeze
 
-HOSTS = {
-  'scale-master' => [NETWORK_IPS[0], 1024, 3],
-  'scale-slave1' => [NETWORK_IPS[1], SLAVE_RAM, SLAVE_CPUS],
-  'scale-slave2' => [NETWORK_IPS[2], SLAVE_RAM, SLAVE_CPUS]
-}.freeze
+HOST_PROJECT_FOLDER = File.absolute_path(File.join(File.dirname(__FILE__), '..'))
+
+HOSTS = [
+  {
+    name: 'scale-master',
+    ipaddr: NETWORK_IPS[0],
+    netmask: NETMASK,
+    mem_size: 1024,
+    cpu_count: 3,
+    sync_config: { host_folder: HOST_PROJECT_FOLDER, guest_folder: '/synced/' } 
+  },
+
+  {
+    name: 'scale-slave1',
+    ipaddr: NETWORK_IPS[1],
+    netmask: NETMASK,
+    mem_size: SLAVE_RAM,
+    cpu_count: SLAVE_CPUS
+  },
+
+  {
+    name: 'scale-slave2',
+    ipaddr: NETWORK_IPS[2],
+    netmask: NETMASK,
+    mem_size: SLAVE_RAM,
+    cpu_count: SLAVE_CPUS
+  }
+].freeze
+
+# Ansible Provisioner
+ANSIBLE_PLAYBOOK = File.join(HOST_PROJECT_FOLDER, '/ansible/vagrant.yml')
 
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
@@ -32,29 +67,35 @@ Vagrant.configure(2) do |config|
   config.hostmanager.ignore_private_ip = false
   config.hostmanager.include_offline = true
 
-  HOSTS.each do |name, cfg|
-    ipaddr, ram, cpus = cfg
-
-    config.vm.define(name) do |machine|
+  HOSTS.each do |cfg|
+    config.vm.define(cfg[:name]) do |machine|
       machine.vm.box = VM_BOX
+
+      # setup network
+      machine.vm.hostname = cfg[:name]
+      machine.vm.network('private_network', \
+                         ip: cfg[:ipaddr], netmask: cfg[:netmask], adapter: 2)
+
+      machine.vm.synced_folder(cfg[:sync_config][:host_folder], cfg[:sync_config][:guest_folder]) if cfg.has_key?(:sync_config)
 
       # set machine's ram and cpu
       machine.vm.provider('virtualbox') do |vbox|
-        vbox.memory = ram
-        vbox.cpus = cpus
+        vbox.gui = true
+        vbox.memory = cfg[:mem_size]
+        vbox.cpus = cfg[:cpu_count]
       end
 
-      machine.vm.provider(:aws) do |aws, override|
-        aws.access_key_id = ENV['AWS_KEY']
-        aws.secret_access_key = ENV['AWS_SECRET']
-        aws.keypair_name = ENV['AWS_KEYNAME']
+      # Should this AWS-provisioning be removed?
+      # machine.vm.provider(:aws) do |aws, override|
+        # aws.access_key_id = ENV['AWS_KEY']
+        # aws.secret_access_key = ENV['AWS_SECRET']
+        # aws.keypair_name = ENV['AWS_KEYNAME']
 
         # AIS base Centos7 AMI: ami-a52071cf
 
-        aws.ami = 'ami-a52071cf'
-        aws.region = 'us-east-1'
-
-        aws.instance_type = 'm4.large'
+        # aws.ami = 'ami-a52071cf'
+        # aws.region = 'us-east-1'
+        # aws.instance_type = 'm4.large'
 
         # request 50GB drive
         # aws.block_device_mapping = [
@@ -67,28 +108,21 @@ Vagrant.configure(2) do |config|
         #     }
         # ]
 
-        aws.tags = { 'Name' => name }
-        aws.security_groups = ['sg-f2ad6a8b']
-        aws.subnet_id = 'subnet-1642a73c'
-        aws.private_ip_address = ipaddr
-        aws.elastic_ip = true
-        override.vm.box = 'dummy'
-        override.ssh.username = 'vagrant'
-        override.ssh.private_key_path = ENV['AWS_KEYPATH']
-      end
-
-      # setup network
-      machine.vm.hostname = name
-      machine.vm.network('private_network', \
-                         ip: ipaddr, netmask: NETMASK, adapter: 2)
-
-      machine.vm.synced_folder('..', '/scale/') if name == 'scale-master'
+        # aws.tags = { 'Name' => cfg[:name] }
+        # aws.security_groups = ['sg-f2ad6a8b']
+        # aws.subnet_id = 'subnet-1642a73c'
+        # aws.private_ip_address = cfg[:ipaddr]
+        # aws.elastic_ip = true
+        # override.vm.box = 'dummy'
+        # override.ssh.username = 'vagrant'
+        # override.ssh.private_key_path = ENV['AWS_KEYPATH']
+      # end
     end
   end
 
   # run the ansible provisioner. rerun with "vagrant provision"
   config.vm.provision(:ansible, run: 'always') do |ansible|
-    ansible.playbook = '../ansible/vagrant.yml'
+    ansible.playbook = ANSIBLE_PLAYBOOK 
     ansible.verbose = 'vv'
     ansible.groups = {
       'zookeeper' => ['scale-master'],
