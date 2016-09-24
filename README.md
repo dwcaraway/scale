@@ -25,7 +25,7 @@ Many Strike processes can be run simultaneously, allowing Scale to monitor many 
 Jobs 
 ----
 Scale creates jobs based on its known job types. A job type defines key characteristics about an algorithm
-that Scale needs to know in order to run it (what command to run, the algorithm.s inputs and outputs, etc.)
+that Scale needs to know in order to run it (what command to run, the algorithm's inputs and outputs, etc.)
 Job types are labeled with versions, allowing Scale to run multiple versions of the same algorithm. Jobs may
 be created automatically due to an event, such as the ingest of a particular type of source data file, or
 they may be created manually by a user. Jobs that need to be executed are placed onto and prioritized within
@@ -37,7 +37,7 @@ Products
 Jobs can produce products as a result of their successful execution. Products may be disseminated to users
 or used to analyze and improve the algorithms that produced them. Scale allows the creation of different
 workspaces. A workspace defines a separate location for storing source or product files. When a job is created,
-it is given a workspace to use for storing its results, allowing a user to control whether the job.s results
+it is given a workspace to use for storing its results, allowing a user to control whether the job's results
 are available to a wider audience or are restricted to a private workspace for the user's own use.
 
 Docker Images
@@ -68,7 +68,7 @@ Alternatively, your own local_settings.py can be volume mounted into `/opt/scale
 | ENABLE_HTTPD             | False                           | Start the Apache HTTP server             |
 | DEPLOY_DB                | False                           | Start the database container in DC/OS    |
 | DEPLOY_LOGGING           | False                           | Start the logstash container in DC/OS    |
-| INIT_DB                  | False                           | Init the db (migrat, load, etc.)         |
+| INIT_DB                  | False                           | Init the db (migrate, load, etc.)         |
 | LOAD_COUNTRY_DATA        | False                           | Load country borders into the database.  |
 | LOGSTASH_DOCKER_IMAGE    | 'geoint/logstash-elastic-ha'    | Docker image for logstash                |
 
