@@ -7,5 +7,4 @@
 # /var/lib/docker.  The loopback makes it slower, and there are some
 # restrictive defaults, such as 100GB max storage.
 
-DOCKER_STORAGE_OPTIONS=
-
+DOCKER_STORAGE_OPTIONS='-s btrfs'

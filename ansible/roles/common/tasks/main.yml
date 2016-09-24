@@ -45,12 +45,6 @@
   copy: src=docker-storage dest='/etc/sysconfig/docker-storage'
   become: true
 
-- name: Setup docker filestore
-  tags: common
-  lineinfile: dest=/etc/sysconfig/docker-storage regexp="^DOCKER_STORAGE_OPTIONS=$" line="DOCKER_STORAGE_OPTIONS=-s btrfs"
-  become: true
-  when: btrfs
-
 - name: Setup docker service file
   tags: common
   copy: src=docker.service dest='/usr/lib/systemd/system/docker.service'
