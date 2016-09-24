@@ -5,7 +5,7 @@
 Vagrant.require_version('>= 1.8.1')
 
 # Check required plugins
-REQUIRED_PLUGINS = %w(vagrant-hostmanager vagrant-vbguest)
+REQUIRED_PLUGINS = %w(vagrant-hostmanager vagrant-vbguest).freeze
 
 REQUIRED_PLUGINS.each do |plugin|
   raise "Missing required plugin. Install the latest plugin version with\n\nvagrant plugin install #{plugin}" unless Vagrant.has_plugin?(plugin)
