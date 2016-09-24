@@ -5,17 +5,18 @@
 Vagrant.require_version('>= 1.8.1')
 
 # Check required plugins
-REQUIRED_PLUGINS = %w(vagrant-hostmanager)
+REQUIRED_PLUGINS = %w(vagrant-hostmanager vagrant-vbguest)
 
 REQUIRED_PLUGINS.each do |plugin|
   raise "Missing required plugin. Install the latest plugin version with\n\nvagrant plugin install #{plugin}" unless Vagrant.has_plugin?(plugin)
 end
 
-
 ##
 # This will provision a couple of machines for a test cluster.
 # One will act as zookeeper, master, db, scheduler, and web server.
 # The other will be an execution slave.
+DEFAULT_USERNAME = 'root'
+DEFAULT_PASSWORD = 'vagrant'
 
 SLAVE_RAM = 2048
 SLAVE_CPUS = 4
@@ -67,6 +68,10 @@ Vagrant.configure(2) do |config|
   config.hostmanager.ignore_private_ip = false
   config.hostmanager.include_offline = true
 
+  #ssh authentication
+  config.ssh.username = DEFAULT_USERNAME
+  config.ssh.password = DEFAULT_PASSWORD
+
   HOSTS.each do |cfg|
     config.vm.define(cfg[:name]) do |machine|
       machine.vm.box = VM_BOX
@@ -80,7 +85,6 @@ Vagrant.configure(2) do |config|
 
       # set machine's ram and cpu
       machine.vm.provider('virtualbox') do |vbox|
-        vbox.gui = true
         vbox.memory = cfg[:mem_size]
         vbox.cpus = cfg[:cpu_count]
       end
