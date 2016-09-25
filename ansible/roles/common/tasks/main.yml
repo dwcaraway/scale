@@ -6,7 +6,12 @@
 
 - name: Install docker-py
   tags: common
-  pip: name=docker-py version=1.8.0
+  pip: name=docker-py version=1.10.3
+  become: true
+
+- name: Install docker-compose
+  tags: common
+  pip: name=docker-compose version=1.8.1
   become: true
 
 - name: Install rsync
